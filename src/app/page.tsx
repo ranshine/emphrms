@@ -1,69 +1,122 @@
-import Image from "next/image";
-import styles from "./page.module.css";
+"use client";
+
+import { useState } from "react";
+import {
+  App,
+  Button,
+  Card,
+  Col,
+  Layout,
+  Menu,
+  Row,
+  Statistic,
+  Table,
+  Tag,
+  Typography,
+} from "antd";
+import type { TableProps } from "antd";
+import {
+  CalendarOutlined,
+  DashboardOutlined,
+  DollarOutlined,
+  PlusOutlined,
+  TeamOutlined,
+} from "@ant-design/icons";
+
+const { Header, Sider, Content } = Layout;
+
+type Employee = {
+  key: string;
+  name: string;
+  department: string;
+  role: string;
+  status: "Active" | "On Leave";
+};
+
+const columns: TableProps<Employee>["columns"] = [
+  { title: "Name", dataIndex: "name" },
+  { title: "Department", dataIndex: "department" },
+  { title: "Role", dataIndex: "role" },
+  {
+    title: "Status",
+    dataIndex: "status",
+    render: (status: Employee["status"]) => (
+      <Tag color={status === "Active" ? "green" : "orange"}>{status}</Tag>
+    ),
+  },
+];
 
 export default function Home() {
+  const [collapsed, setCollapsed] = useState(false);
+  const [employees] = useState<Employee[]>([]);
+  const { message } = App.useApp();
+
   return (
-    <div className={styles.page}>
-      <main className={styles.main}>
-        <Image
-          className={styles.logo}
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
+    <Layout style={{ minHeight: "100vh" }}>
+      <Sider collapsible collapsed={collapsed} onCollapse={setCollapsed}>
+        <div style={{ color: "#fff", padding: 16, fontWeight: 600, fontSize: 18 }}>
+          {collapsed ? "HR" : "EmpHRMS"}
+        </div>
+        <Menu
+          theme="dark"
+          mode="inline"
+          defaultSelectedKeys={["dashboard"]}
+          items={[
+            { key: "dashboard", icon: <DashboardOutlined />, label: "Dashboard" },
+            { key: "employees", icon: <TeamOutlined />, label: "Employees" },
+            { key: "leave", icon: <CalendarOutlined />, label: "Leave" },
+            { key: "payroll", icon: <DollarOutlined />, label: "Payroll" },
+          ]}
         />
-        <div className={styles.intro}>
-          <h1>
-            To get started, edit the{" "}
-            <code className={styles.code}>page.tsx</code> file.
-          </h1>
-          <p>
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className={styles.ctas}>
-          <a
-            className={styles.primary}
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+      </Sider>
+      <Layout>
+        <Header style={{ background: "#fff", paddingInline: 24 }}>
+          <Typography.Title level={4} style={{ margin: 0, lineHeight: "64px" }}>
+            Dashboard
+          </Typography.Title>
+        </Header>
+        <Content style={{ margin: 24 }}>
+          <Row gutter={[16, 16]}>
+            <Col xs={24} sm={8}>
+              <Card>
+                <Statistic title="Total Employees" value={employees.length} prefix={<TeamOutlined />} />
+              </Card>
+            </Col>
+            <Col xs={24} sm={8}>
+              <Card>
+                <Statistic
+                  title="On Leave"
+                  value={employees.filter((e) => e.status === "On Leave").length}
+                  prefix={<CalendarOutlined />}
+                />
+              </Card>
+            </Col>
+            <Col xs={24} sm={8}>
+              <Card>
+                <Statistic
+                  title="Departments"
+                  value={new Set(employees.map((e) => e.department)).size}
+                />
+              </Card>
+            </Col>
+          </Row>
+          <Card
+            title="Employees"
+            style={{ marginTop: 16 }}
+            extra={
+              <Button
+                type="primary"
+                icon={<PlusOutlined />}
+                onClick={() => message.info("Add employee form coming soon")}
+              >
+                Add Employee
+              </Button>
+            }
           >
-            <Image
-              className={styles.logo}
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={14}
-            />
-            Deploy Now
-          </a>
-          <a
-            className={styles.secondary}
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
-    </div>
+            <Table columns={columns} dataSource={employees} pagination={false} />
+          </Card>
+        </Content>
+      </Layout>
+    </Layout>
   );
 }
