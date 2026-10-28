@@ -1,0 +1,75 @@
+// Prisma schema: https://pris.ly/d/prisma-schema
+//
+// The tables live in Supabase (Postgres) and are created from supabase/schema.sql.
+// Prisma only maps onto them, so there are no Prisma migrations to run.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+/// Admin login credentials. Passwords are stored as bcrypt hashes, never plain text.
+model Login {
+  id           BigInt @id @default(autoincrement())
+  userId       String @unique @map("user_id")
+  passwordHash String @map("password_hash")
+
+  @@map("logins")
+}
+
+enum EmployeeStatus {
+  ACTIVE
+  ON_LEAVE
+  INACTIVE
+
+  @@map("employee_status")
+}
+
+/// Basic employee details.
+model Employee {
+  id            BigInt         @id @default(autoincrement())
+  employeeCode  String         @unique @map("employee_code")
+  firstName     String         @map("first_name")
+  lastName      String         @map("last_name")
+  email         String         @unique
+  phone         String?
+  department    String?
+  designation   String?
+  dateOfJoining DateTime?      @map("date_of_joining") @db.Date
+  status        EmployeeStatus @default(ACTIVE)
+
+  salaries Salary[]
+
+  @@index([department], map: "employees_department_idx")
+  @@index([status], map: "employees_status_idx")
+  @@map("employees")
+}
+
+/// One row per day. Employees in neither list are "not marked".
+/// Ids are not foreign keys, so a deleted employee's id can linger in old days.
+model Attendance {
+  date       DateTime @id @db.Date
+  presentIds BigInt[] @default([]) @map("present_ids")
+  absentIds  BigInt[] @default([]) @map("absent_ids")
+
+  @@map("attendance")
+}
+
+/// One record per employee per month; `month` is the 1st of the month.
+model Salary {
+  id         BigInt   @id @default(autoincrement())
+  employeeId BigInt   @map("employee_id")
+  month      DateTime @db.Date
+  basic      Decimal  @db.Decimal(12, 2)
+  allowances Decimal  @default(0) @db.Decimal(12, 2)
+  deductions Decimal  @default(0) @db.Decimal(12, 2)
+  netPay     Decimal  @map("net_pay") @db.Decimal(12, 2)
+  employee   Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@unique([employeeId, month], map: "salaries_employee_month_key")
+  @@map("salaries")
+}
